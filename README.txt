@@ -1,21 +1,39 @@
-# Tama-Saur: Prehistoric Overlay Timer (RAWR!!)
+Tama-Saur: Prehistoric Overlay Timer (RAWR!!)
+A pixel-art Pomodoro timer that floats on your screen. The dino roams your entire monitor while you work.
 
-A kawaii pixel-art Pomodoro timer that floats on your screen.
+Quick Start (No Installation needed)
+If you just want to use the timer without touching the code:
+-- Go to the Releases section on the right side of this GitHub page.
+-- Download the TamaSaur_Windows.zip file.
+-- Unzip the folder and run TamaSaur.exe.
 
-## Features
-- **Overlay Mode**: The dino roams your entire screen.
-- **Draggable**: Move the shell by grabbing the top label.
-- **Resizable**: Scale the shell using the handle at the bottom right.
-- **Customizable**: Swap the pixel art in the `assets` folder to create your own character!
+Features:
+Overlay Mode: The dino roams your entire screen.
+Draggable: Move the shell by grabbing the PREHISTORIC TIMER label.
+Resizable: Scale the shell using the handle at the bottom right.
+Egg Mechanic: The dino leaves an egg behind every 3rd jump.
 
-## How to use
-1. Install [Node.js](https://nodejs.org/).
-2. Clone this repo.
-3. Run `npm install` in the terminal.
-4. Run `npm start` to launch the timer.
+Design your own Dino (Modding)
+You can change the character's look without any programming knowledge:
 
-## Design your own Dino
-Simply replace the files in the `assets/` folder with your own `.png` sprites created using https://www.piskelapp.com/p/create/sprite/. Keep the file names identical!
-(IMPORTANT! Choose the Spritesheet layout options for png on piksel so that it shows Rows: 1 or else the animations will look funky.)
+-- Open your TamaSaur folder and navigate to:
+   resources/app/assets/
+   You will see several .png files. To change the character, simply replace these files with your own art. Keep the file names exactly the same:
+Tip: Use Piskel (piskelapp.com) to create your sprites. When exporting as a PNG spritesheet, ensure you choose Rows: 1 so the animation frames are lined up correctly.
 
-Have fun!!
+------- Animation.png: Idle and Walking animation.
+------- Animation_vorne.png: Walking from the screen.
+------- Animation_hinten.png: Walking to the screen.
+------- Animation_carry.png: When you pick up the dino.
+
+-- Restart the TamaSaur.exe to see your new character.
+
+
+Developer Setup
+If you want to modify the code itself:
+Install Node.js.
+Clone this repo and run: npm install
+Use: npm start to test the app.
+Use: npm run pack-win to build your own .exe file.
+
+Have fun!
