@@ -1,0 +1,16 @@
+{
+  "name": "tamasaur-overlay",
+  "version": "1.0.0",
+  "description": "Overlay Dino Timer",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack-win": "electron-packager . TamaSaur --platform=win32 --arch=x64 --overwrite --icon=assets/icon.ico"
+  },
+  "author": "You",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-packager": "^17.1.2"
+  }
+}

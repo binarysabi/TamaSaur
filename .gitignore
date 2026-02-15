@@ -1,0 +1,5 @@
+node_modules/
+TamaSaur-win32-x64/
+TamaSaur-darwin-x64/
+.DS_Store
+dist/

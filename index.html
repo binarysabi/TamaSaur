@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Tama-Saur Overlay</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+    <style>
+        /* --- DINO PALETTE --- */
+        :root {
+            --shell-color: #9bf2a6; --shell-shadow: #76c482; --outline: #1a2e1a;
+            --screen-bg: #2b3a28; --lcd-lit: #d6ffd9; --btn-color: #5da869; --decor-leaf: #3e7a46;
+        }
+
+        body { 
+            background-color: transparent; margin: 0; padding: 0; 
+            height: 100vh; width: 100vw; overflow: hidden; 
+            font-family: 'Press Start 2P', cursive;
+            
+            /* IMPORTANT FOR OVERLAY: */
+            pointer-events: none; /* Clicks pass through empty spaces */
+            user-select: none;
+        }
+
+        /* --- THE SHELL --- */
+        .tamagotchi-shell {
+            position: absolute; 
+            top: 20px; right: 20px; /* Starting position top right */
+            width: 320px; height: 380px;
+            background-color: var(--shell-color);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            box-shadow: inset -10px -10px 0 var(--shell-shadow), inset 10px 10px 0 rgba(255,255,255,0.4), 0 0 0 6px var(--outline);
+            display: flex; flex-direction: column; align-items: center; 
+            padding-top: 50px; box-sizing: border-box;
+            background-image: radial-gradient(circle, var(--decor-leaf) 10%, transparent 10%), radial-gradient(circle, var(--decor-leaf) 10%, transparent 10%);
+            background-size: 60px 60px; background-position: 0 0, 30px 30px;
+            
+            /* IMPORTANT: The shell must be clickable */
+            pointer-events: auto; 
+            transform-origin: top right; /* Scales from the corner */
+            z-index: 100;
+        }
+
+        .tamagotchi-shell::after { content: ''; position: absolute; top: 40px; right: 60px; width: 40px; height: 20px; background: white; border-radius: 50%; transform: rotate(-45deg); opacity: 0.7; pointer-events: none; }
+        .keychain-loop { position: absolute; top: 60px; left: -10px; width: 20px; height: 20px; background: var(--shell-color); border: 6px solid var(--outline); border-radius: 50%; z-index: -1; }
+
+        /* SCREEN */
+        .screen-area { width: 220px; display: flex; flex-direction: column; align-items: center; position: relative; }
+        
+        /* DRAG HANDLE */
+        .label-top { 
+            font-size: 10px; color: var(--decor-leaf); margin-bottom: 5px; 
+            cursor: grab; /* Shows hand symbol */
+            padding: 10px; width: 100%; text-align: center;
+        }
+        .label-top:active { cursor: grabbing; }
+
+        .screen-bezel { width: 100%; height: 160px; background-color: var(--outline); border-radius: 15px; padding: 8px; box-sizing: border-box; box-shadow: 0 4px 0 rgba(0,0,0,0.2); position: relative; }
+        .lcd-screen { width: 100%; height: 100%; background-color: var(--screen-bg); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 10px 5px; box-sizing: border-box; color: var(--lcd-lit); box-shadow: inset 0 0 10px rgba(0,0,0,0.5); position: relative; overflow: hidden; }
+        .lcd-screen::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18, 25, 18, 0.1) 50%, transparent 50%), linear-gradient(90deg, rgba(18, 25, 18, 0.1) 50%, transparent 50%); background-size: 4px 4px; pointer-events: none; }
+        .label-bottom { font-size: 14px; color: #fff; margin-top: 10px; margin-bottom: 20px; text-shadow: 2px 2px 0 var(--outline); background: var(--decor-leaf); padding: 4px 10px; border-radius: 10px; border: 3px solid var(--outline); }
+        #timer { font-size: 2.2rem; color: var(--lcd-lit); margin: 5px 0; text-shadow: 0 0 5px var(--lcd-lit); z-index: 2; }
+        .status-bar { display: flex; gap: 5px; opacity: 0.7; z-index: 2; border-bottom: 2px solid var(--lcd-lit); padding-bottom: 2px; } .status-bar span { font-size: 10px; }
+        #mode-text { font-size: 8px; text-transform: uppercase; color: var(--lcd-lit); z-index: 2; margin-bottom: 5px; text-align: center; min-height: 10px; width: 100%; white-space: nowrap; overflow: hidden; }
+        .icon-active { color: #ffff00 !important; text-shadow: 0 0 5px orange; transform: scale(1.2); }
+
+        /* BUTTONS - Shifted up and resized */
+        .button-row { display: flex; justify-content: center; gap: 20px; width: 100%; padding-bottom: 30px; margin-top: -10px; }
+        .tama-btn { width: 38px; height: 38px; background-color: var(--btn-color); border: 4px solid var(--outline); border-radius: 50%; box-shadow: inset -4px -4px 0 rgba(0,0,0,0.3), inset 4px 4px 0 rgba(255,255,255,0.3), 3px 3px 0 rgba(0,0,0,0.2); cursor: pointer; position: relative; display: flex; justify-content: center; align-items: center; font-size: 10px; color: var(--outline); font-weight: bold; }
+        .tama-btn:active { transform: translate(2px, 2px); box-shadow: inset -2px -2px 0 rgba(0,0,0,0.3); }
+        .btn-label { position: absolute; bottom: -18px; font-size: 10px; color: var(--decor-leaf); font-weight: bold; }
+        
+        .leaf-deco { position: absolute; width: 40px; height: 40px; background: var(--decor-leaf); border: 4px solid var(--outline); border-radius: 20px 0 20px 0; z-index: -1; }
+        .leaf-1 { top: 100px; left: -15px; transform: rotate(-15deg); } .leaf-2 { top: 200px; right: -15px; transform: rotate(15deg) scaleX(-1); } .leaf-3 { top: 50px; right: 20px; width: 20px; height: 20px; transform: rotate(45deg); border-radius: 50%; background: #e6c229; }
+        .close-wrapper { position: absolute; top: 0; right: 50%; transform: translateX(50%); width: 100%; height: 30px; z-index: 200; display: flex; justify-content: center;}
+        .close-mini { background: #ff6b6b; border: 3px solid var(--outline); color: white; width: 20px; height: 20px; font-size: 10px; cursor: pointer; margin-top: -10px; border-radius: 5px; }
+
+        /* RESIZE HANDLE */
+        .resize-handle {
+            position: absolute; bottom: 20px; right: 20px;
+            width: 20px; height: 20px;
+            background: linear-gradient(135deg, transparent 50%, rgba(26, 46, 26, 0.5) 50%);
+            cursor: nwse-resize; z-index: 200;
+        }
+
+        /* DINO - FREE ON SCREEN */
+        #dino-wrapper { width: 48px; height: 48px; position: absolute; transform: scale(2); transform-origin: center; pointer-events: auto; cursor: grab; z-index: 50; }
+        #dino-wrapper:active { cursor: grabbing; }
+        @keyframes jump-visual { 0%, 100% { margin-bottom: 0; } 50% { margin-bottom: 40px; } }
+        .is-jumping { animation: jump-visual 0.4s ease-out; }
+        #my-dino { width: 100%; height: 100%; image-rendering: pixelated; display: none; }
+        
+        /* ASSETS */
+        .anim-normal { background-image: url('assets/Animation.png'); }
+        .anim-hinten { background-image: url('assets/Animation_hinten.png'); }
+        .anim-vorne { background-image: url('assets/Animation_vorne.png'); }
+        .anim-carry  { background-image: url('assets/Animation_carry.png'); }
+        .wrapper-flipped { transform: scale(2) scaleX(-1) !important; }
+        @keyframes run-anim { from { background-position: 0px; } to { background-position: -288px; } }
+        .walking { display: block !important; animation: run-anim 0.6s steps(6) infinite; }
+        .standing { display: block !important; background-position: 0px; animation: none; }
+        .footprint { position: absolute; width: 12px; height: 6px; background-color: rgba(77, 168, 138, 0.4); border-radius: 50%; pointer-events: none; animation: fade-out 2s forwards; z-index: 10; }
+        @keyframes fade-out { to { opacity: 0; transform: scale(0.5); } }
+        #glitter-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; mask-size: cover; -webkit-mask-size: cover; background-image: radial-gradient(white 20%, transparent 20%), radial-gradient(white 20%, transparent 20%); background-size: 4px 4px; background-position: 0 0, 2px 2px; background-color: gold; mix-blend-mode: color-dodge; }
+        @keyframes sparkle-anim { 0% { background-position: 0 0, 2px 2px; filter: hue-rotate(0deg); } 100% { background-position: 8px 8px, 10px 10px; filter: hue-rotate(360deg); } }
+        .glitter-active { opacity: 1 !important; animation: sparkle-anim 0.2s linear infinite; }
+        .dino-zoom-active { position: fixed !important; left: 50% !important; bottom: 50% !important; top: auto !important; transition: transform 3s ease-in-out; transform: translate(-50%, 50%) scale(12) !important; z-index: 9999; }
+
+        /* NEW: DINO EGG STYLE */
+        .dino-egg { 
+            position: absolute; width: 16px; height: 20px; 
+            background-color: #f3e5ab; /* Eggshell color */
+            /* Spotted pattern */
+            background-image: radial-gradient(#c7b299 15%, transparent 16%), radial-gradient(#c7b299 15%, transparent 16%);
+            background-size: 6px 6px; background-position: 0 0, 3px 3px;
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; /* Egg shape */
+            pointer-events: none; animation: fade-out 5s forwards; z-index: 9; 
+            border: 1px solid rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="tamagotchi-shell" id="ui-box">
+        <div class="keychain-loop"></div>
+        <div class="leaf-deco leaf-1"></div><div class="leaf-deco leaf-2"></div><div class="leaf-deco leaf-3"></div>
+        <div class="close-wrapper"><button class="close-mini" onclick="window.close()">x</button></div>
+
+        <div class="screen-area">
+            <div class="label-top" id="drag-handle">PREHISTORIC TIMER</div>
+            
+            <div class="screen-bezel">
+                <div class="lcd-screen">
+                    <div class="status-bar"><span>🍖</span><span id="status-play">★</span><span id="status-medicine">❤</span></div>
+                    <div id="timer">25:00</div>
+                    <div id="mode-text">WAITING...</div>
+                </div>
+            </div>
+            <div class="label-bottom">TAMA-SAUR</div>
+        </div>
+        
+        <div class="button-row">
+            <div class="tama-btn" onclick="cycleTime()">A<span class="btn-label">TIME</span></div>
+            <div class="tama-btn" onclick="toggleTimer()">B<span class="btn-label">RUN</span></div>
+            <div class="tama-btn" onclick="dinoJump()">C<span class="btn-label">JUMP</span></div>
+        </div>
+
+        <div class="resize-handle" id="resize-btn"></div>
+    </div>
+    
+    <div id="dino-wrapper"><div id="my-dino" onclick="dinoClicked()" ondblclick="dinoDoubleClicked()"></div><div id="glitter-overlay"></div></div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        const uiBox = document.getElementById('ui-box'); 
+        const dinoWrapper = document.getElementById('dino-wrapper');
+        const dinoElement = document.getElementById('my-dino'); 
+        const timerDisplay = document.getElementById('timer');
+        const glitterOverlay = document.getElementById('glitter-overlay'); 
+        const modeTextDisplay = document.getElementById('mode-text');
+        
+        // --- MOUSE LOGIC (PASS THROUGH) ---
+        function enableMouse() { ipcRenderer.send('set-ignore-mouse-events', false); }
+        function disableMouse() { ipcRenderer.send('set-ignore-mouse-events', true, { forward: true }); }
+        
+        uiBox.addEventListener('mouseenter', enableMouse); 
+        uiBox.addEventListener('mouseleave', disableMouse);
+        dinoWrapper.addEventListener('mouseenter', enableMouse); 
+        dinoWrapper.addEventListener('mouseleave', disableMouse);
+
+        // --- 1. MOVE SHELL (DRAG WIDGET) ---
+        const dragHandle = document.getElementById('drag-handle');
+        let isWidgetDragging = false;
+        let startX, startY, initialLeft, initialTop;
+
+        dragHandle.addEventListener('mousedown', (e) => {
+            isWidgetDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            const rect = uiBox.getBoundingClientRect();
+            initialLeft = rect.left;
+            initialTop = rect.top;
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isWidgetDragging) {
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                uiBox.style.left = (initialLeft + dx) + 'px';
+                uiBox.style.top = (initialTop + dy) + 'px';
+                uiBox.style.right = 'auto'; // Reset Right
+            }
+        });
+
+        window.addEventListener('mouseup', () => { isWidgetDragging = false; });
+
+        // --- 2. SCALE SHELL (SCALE WIDGET) ---
+        const resizeBtn = document.getElementById('resize-btn');
+        let isResizing = false;
+        let scaleStartY;
+        let currentScale = 1;
+
+        resizeBtn.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            scaleStartY = e.clientY;
+            e.stopPropagation(); 
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (isResizing) {
+                const dy = e.clientY - scaleStartY;
+                let newScale = currentScale + (dy * 0.005);
+                if (newScale < 0.5) newScale = 0.5;
+                if (newScale > 2.0) newScale = 2.0;
+                uiBox.style.transform = `scale(${newScale})`;
+            }
+        });
+
+        window.addEventListener('mouseup', (e) => { 
+            if (isResizing) {
+                isResizing = false;
+                const match = uiBox.style.transform.match(/scale\(([^)]+)\)/);
+                if (match) currentScale = parseFloat(match[1]);
+            }
+        });
+
+        // --- DINO LOGIC ---
+        const dinoQuotes = ["RAWR! (KEEP GOING!)", "DON'T BE A T-WRECK", "STAY REX-CELLENT!", "DINO-MITE WORK!", "LOOKING FOR SNACKS...", "SMALL ARMS, BIG DREAMS", "METEORITE INCOMING?!", "CHOMP THOSE TASKS!", "CLEVER GIRL...", "MAKING HISTORY!", "ROAR MEANS FOCUS!"];
+        let quoteInterval;
+        function updateQuote() { const randomQuote = dinoQuotes[Math.floor(Math.random() * dinoQuotes.length)]; modeTextDisplay.innerText = randomQuote; }
+
+        let isDinoDragging = false; let dinoOffsetX, dinoOffsetY; let lastDragX = 0, lastDragY = 0;
+        let throwVelX = 0, throwVelY = 0;
+
+        dinoWrapper.addEventListener('mousedown', (e) => { 
+            if (e.target === dinoElement || e.target === dinoWrapper) { 
+                isDinoDragging = true; isPausedByDino = true; throwVelX = 0; throwVelY = 0;
+                dinoOffsetX = e.clientX - dinoWrapper.offsetLeft; 
+                dinoOffsetY = e.clientY - (window.innerHeight - dinoWrapper.offsetTop - dinoWrapper.offsetHeight); 
+                lastDragX = e.clientX; lastDragY = e.clientY;
+                setDinoAnimation('anim-carry', 'assets/Animation_carry.png'); 
+                dinoElement.classList.remove('standing'); dinoElement.classList.add('walking'); 
+            } 
+        });
+        
+        window.addEventListener('mousemove', (e) => { 
+            if (isDinoDragging) { 
+                throwVelX = e.clientX - lastDragX;
+                throwVelY = lastDragY - e.clientY; // Y inverted
+                lastDragX = e.clientX; lastDragY = e.clientY;
+
+                posX = e.clientX - dinoOffsetX; posY = window.innerHeight - e.clientY - 24; 
+                dinoWrapper.style.left = posX + "px"; dinoWrapper.style.bottom = posY + "px"; 
+                if (throwVelX < 0) dinoWrapper.classList.add('wrapper-flipped'); else if (throwVelX > 0) dinoWrapper.classList.remove('wrapper-flipped'); 
+            } 
+        });
+        
+        window.addEventListener('mouseup', () => { 
+            if (isDinoDragging) { 
+                isDinoDragging = false; isPausedByDino = false; 
+                speedX = Math.max(-25, Math.min(25, throwVelX));
+                speedY = Math.max(-25, Math.min(25, throwVelY));
+                if (isRunning) { dinoElement.classList.add('walking'); dinoElement.classList.remove('standing'); } 
+                if (isRunning) setDinoAnimation('anim-normal', 'assets/Animation.png');
+            } 
+        });
+
+        let posX = window.innerWidth / 2; let posY = 150; let speedX = 2; let speedY = 0; let isRunning = false; let isPausedByDino = false; let isStarPowerActive = false; let stepCounter = 0; let currentAnimImage = 'assets/Animation.png'; let timerInterval, moveInterval, behaviorTimer, centerWalkInterval;
+        const timeOptions = [10, 15, 25, 50, 5]; let currentTimeIdx = 2;
+        
+        // FIX: Timer Initialisation so it works immediately
+        let timeLeft = 1500; 
+        updateDisplay();
+
+        function cycleTime() { currentTimeIdx = (currentTimeIdx + 1) % timeOptions.length; setTime(timeOptions[currentTimeIdx]); }
+        function setTime(minutes) { if (isRunning) pause(); timeLeft = Math.floor(minutes * 60); updateDisplay(); resetDinoTransform(); modeTextDisplay.innerText = minutes === 5 ? "BREAK TIME!" : "LOST IN JUNGLE..."; }
+        
+        function updateDisplay() { 
+            let m = Math.floor(timeLeft / 60); let s = Math.floor(timeLeft % 60); 
+            // Fix display formatting
+            timerDisplay.textContent = `${m}:${s < 10 ? '0' + s : s}`; 
+        }
+        
+        function toggleTimer() { if (!isRunning) start(); else pause(); }
+        
+        function start() { 
+            if (isRunning) return; isRunning = true; isPausedByDino = false; resetDinoTransform(); setDinoAnimation('anim-normal', 'assets/Animation.png'); updateQuote(); quoteInterval = setInterval(updateQuote, 30000); 
+            timerInterval = setInterval(() => { if (timeLeft > 0) { timeLeft--; updateDisplay(); } else { prepareFinale(); } }, 1000); 
+            
+            // Re-activate movement loop if it was stopped
+            if(!moveInterval) startMoveLoop();
+        }
+
+        function startMoveLoop() {
+             if(moveInterval) clearInterval(moveInterval);
+             moveInterval = setInterval(() => { 
+                if (isPausedByDino) return; 
+                let mult = isStarPowerActive ? 4 : 1; 
+                posX += speedX * mult; posY += speedY * mult; 
+
+                if (posX > window.innerWidth - 50 || posX < 0) speedX *= -1; 
+                if (posY > window.innerHeight - 100 || posY < 0) speedY *= -1; 
+                
+                if (!isStarPowerActive) {
+                     if (Math.abs(speedX) > 2) speedX *= 0.98;
+                     if (Math.abs(speedY) > 0.1) speedY *= 0.98;
+                }
+
+                if (speedX < 0) dinoWrapper.classList.add('wrapper-flipped'); else dinoWrapper.classList.remove('wrapper-flipped'); 
+                if (speedY > 0.5) setDinoAnimation('anim-vorne', 'assets/Animation_vorne.png'); else if (speedY < -0.5) setDinoAnimation('anim-hinten', 'assets/Animation_hinten.png'); else setDinoAnimation('anim-normal', 'assets/Animation.png'); 
+                dinoWrapper.style.left = posX + "px"; dinoWrapper.style.bottom = posY + "px"; 
+                stepCounter++; if (stepCounter > 15) { createFootprint(posX, posY); stepCounter = 0; } 
+            }, 20); 
+        }
+        // Start roaming immediately
+        startMoveLoop();
+
+        behaviorTimer = setInterval(() => { if (isPausedByDino || isStarPowerActive || Math.abs(speedX) > 3) return; speedX = (Math.random() - 0.5) * 4; speedY = (Math.random() - 0.5) * 4; }, 2000); 
+        
+        let jumpCount = 0;
+        function dinoJump() { 
+            dinoWrapper.classList.add('is-jumping'); 
+            jumpCount++;
+            // EGG LOGIC: Every 3rd jump
+            if (jumpCount % 3 === 0) {
+                setTimeout(() => createEgg(posX, posY), 200);
+            }
+            setTimeout(() => dinoWrapper.classList.remove('is-jumping'), 400); 
+        }
+        
+        function createFootprint(x, y) { const fp = document.createElement('div'); fp.className = 'footprint'; fp.style.left = (x + 18) + 'px'; fp.style.bottom = (y + 5) + 'px'; document.body.appendChild(fp); setTimeout(() => fp.remove(), 2000); }
+        
+        // NEW: Create Egg Function
+        function createEgg(x, y) {
+            const egg = document.createElement('div');
+            egg.className = 'dino-egg';
+            egg.style.left = (x + 16) + 'px';
+            egg.style.bottom = (y + 2) + 'px';
+            document.body.appendChild(egg);
+            setTimeout(() => egg.remove(), 5000);
+        }
+
+        function setDinoAnimation(className, imageName) { if (currentAnimImage === imageName && dinoElement.classList.contains(className)) return; dinoElement.className = ''; dinoElement.classList.add(className, 'walking'); currentAnimImage = imageName; glitterOverlay.style.webkitMaskImage = `url('${imageName}')`; glitterOverlay.style.maskImage = `url('${imageName}')`; }
+        function prepareFinale() { if(isStarPowerActive) deactivateStarPower(); clearInterval(timerInterval); clearInterval(moveInterval); clearInterval(behaviorTimer); clearInterval(quoteInterval); modeTextDisplay.innerText = "ROAAR! DONE!"; centerWalkInterval = setInterval(() => { let targetX = (window.innerWidth / 2) - 24; let targetY = (window.innerHeight / 2) - 24; let dx = targetX - posX; let dy = targetY - posY; if (Math.abs(dx) < 5 && Math.abs(dy) < 5) { clearInterval(centerWalkInterval); startFinaleZoom(); return; } let angle = Math.atan2(dy, dx); let moveY = Math.sin(angle) * 3; posX += Math.cos(angle) * 3; posY += moveY; if (moveY > 0.5) setDinoAnimation('anim-vorne', 'assets/Animation_vorne.png'); else if (moveY < -0.5) setDinoAnimation('anim-hinten', 'assets/Animation_hinten.png'); else setDinoAnimation('anim-normal', 'assets/Animation.png'); dinoWrapper.style.left = posX + "px"; dinoWrapper.style.bottom = posY + "px"; }, 20); }
+        function startFinaleZoom() { setDinoAnimation('anim-hinten', 'assets/Animation_hinten.png'); dinoWrapper.classList.remove('wrapper-flipped'); dinoElement.classList.add('walking'); dinoWrapper.style.transform = "scale(1)"; setTimeout(() => dinoWrapper.classList.add('dino-zoom-active'), 100); setTimeout(() => { dinoElement.classList.remove('walking'); dinoElement.classList.add('standing'); }, 3500); }
+        function resetDinoTransform() { dinoWrapper.classList.remove('dino-zoom-active'); clearInterval(centerWalkInterval); dinoWrapper.style.position = "absolute"; dinoWrapper.style.transform = "scale(2)"; dinoElement.classList.remove('standing'); dinoElement.classList.add('walking'); deactivateStarPower(); }
+        function pause() { isRunning = false; clearInterval(timerInterval); clearInterval(moveInterval); clearInterval(behaviorTimer); clearInterval(centerWalkInterval); clearInterval(quoteInterval); resetDinoTransform(); modeTextDisplay.innerText = "Zzz... PAUSED"; }
+        function dinoClicked() { if (!isStarPowerActive) { speedX *= 1.2; speedY *= 1.2; } }
+        function dinoDoubleClicked() { if (isRunning && !isStarPowerActive) activateStarPower(); }
+        
+        // FIX: Rainbow Speed Boost
+        function activateStarPower() { 
+            isStarPowerActive = true; 
+            // Give immediate speed boost if slow
+            if (Math.abs(speedX) < 4) speedX = (speedX > 0 ? 6 : -6);
+            if (Math.abs(speedY) < 2) speedY = (Math.random() > 0.5 ? 4 : -4);
+            
+            glitterOverlay.classList.add('glitter-active'); 
+            document.getElementById('status-play').classList.add('icon-active'); 
+            setTimeout(deactivateStarPower, 5000); 
+        }
+        function deactivateStarPower() { isStarPowerActive = false; glitterOverlay.classList.remove('glitter-active'); document.getElementById('status-play').classList.remove('icon-active'); }
+    </script>
+</body>
+</html>
